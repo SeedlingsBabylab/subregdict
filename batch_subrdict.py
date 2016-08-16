@@ -64,7 +64,7 @@ def read_subr_dict(path):
             if row[1] and row[2] and row[3] and row[4]:
                 if row[3] == "onset":
                     subreg_dict[row[0]][row[1]] = {}
-                    subreg_dict[row[0]][row[1]]["onset"] = row[4]
+                    subreg_dict[row[0]][row[1]]["onset"] = row[4].split("_")[1]
                     subreg_dict[row[0]][row[1]]["reg_num"] = int(row[1])
                     subreg_dict[row[0]][row[1]]["total_reg_num"] = int(row[2])
                     subreg_dict[row[0]][row[1]]["subr_version"] = "original"
@@ -83,7 +83,7 @@ def read_subr_dict(path):
                     else:
                         subreg_dict[row[0]][row[1]]["rank"] = ""
 
-                    subreg_dict[row[0]][row[1]]["offset"] = row[4]
+                    subreg_dict[row[0]][row[1]]["offset"] = row[4].split("_")[1]
                     subreg_dict[row[0]][row[1]]["subr_version"] = "original"
 
             prev_file = row[0]
@@ -194,9 +194,22 @@ def output_new_dictionary(new_regions, original_regions):
                          "onset", "offset", "rank", "subr_version"])
 
         for filename, value in ordered_map.iteritems():
-            for reg_num, region in value.iteritems():
+            ordered_region = OrderedDict(sorted(value.iteritems()))
+            for reg_num, region in ordered_region.iteritems():
+                if "onset" in region:
+                    onset = region["onset"]
+                else:
+                    onset = None
+                if "offset" in region:
+                    offset = region["offset"]
+                else:
+                    offset = None
+                if "rank" in region:
+                    rank = region["rank"]
+                else:
+                    rank = None
                 writer.writerow([filename, reg_num, region["total_reg_num"],
-                                 region["onset"], region["offset"], region["rank"], region["subr_version"]])
+                                 onset, offset, rank, region["subr_version"]])
 
 
 

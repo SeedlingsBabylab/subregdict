@@ -19,8 +19,10 @@ def parse_comments(comments):
 
         if "starts" in row[3]:
             temp[3] = "onset"
-        if "ends" in row[3]:
+        elif "ends" in row[3]:
             temp[3] = "offset"
+        else:
+            continue
 
         temp[4] = row[2]
 
