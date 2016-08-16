@@ -3,6 +3,8 @@ import sys
 import os
 import re
 
+from collections import deque
+
 lena_data = []
 
 five_min_ms = 300000
@@ -52,6 +54,10 @@ def output_ranked_lena(top_n, ranked_regions):
     print ranked_regions[:top_n]
 
 def parse_cha(top_n, ranked_regions):
+    region_queue = deque(rank_regions[:top_n])
+
+    curr_region = region_queue.popleft()
+
     with open(cha_file, "rU") as input_cha:
         for line in input_cha:
             regx_result = interval_regx.search(line)
@@ -61,6 +67,9 @@ def parse_cha(top_n, ranked_regions):
                 split_interval = map(int, split_interval)
 
                 print split_interval
+
+
+
 
 
 if __name__ == "__main__":
