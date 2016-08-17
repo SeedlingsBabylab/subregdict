@@ -4,6 +4,7 @@ import os
 import re
 from collections import deque, OrderedDict
 
+import original_algo
 
 
 five_min_ms = 300000
@@ -16,7 +17,6 @@ class FileGroup:
         self.cha_file = cha
         self.silence_file = silences
 
-# def collect_files(dir):
 
 def find_all_file_groups(start_dir):
     curr_index = 0
@@ -41,12 +41,14 @@ def find_all_file_groups(start_dir):
 
     return file_groups
 
+
 def file_already_in_groups(file, groups):
     for group in groups:
         if file == os.path.basename(group.lena_file) or \
                         file == os.path.basename(group.cha_file):
             return True
     return False
+
 
 def read_subr_dict(path):
     subreg_dict = {}
@@ -64,7 +66,7 @@ def read_subr_dict(path):
             if row[1] and row[2] and row[3] and row[4]:
                 if row[3] == "onset":
                     subreg_dict[row[0]][row[1]] = {}
-                    subreg_dict[row[0]][row[1]]["onset"] = row[4].split("_")[1]
+                    subreg_dict[row[0]][row[1]]["orig_onset"] = row[4].split("_")[1]
                     subreg_dict[row[0]][row[1]]["reg_num"] = int(row[1])
                     subreg_dict[row[0]][row[1]]["total_reg_num"] = int(row[2])
                     subreg_dict[row[0]][row[1]]["subr_version"] = "original"
@@ -79,16 +81,17 @@ def read_subr_dict(path):
                         subreg_dict[row[0]][row[1]]["reg_num"] = int(row[1])
                         subreg_dict[row[0]][row[1]]["total_reg_num"] = int(row[2])
                     if row[5]:
-                        subreg_dict[row[0]][row[1]]["rank"] = int(row[5])
+                        subreg_dict[row[0]][row[1]]["orig_rank"] = int(row[5])
                     else:
-                        subreg_dict[row[0]][row[1]]["rank"] = ""
+                        subreg_dict[row[0]][row[1]]["orig_rank"] = ""
 
-                    subreg_dict[row[0]][row[1]]["offset"] = row[4].split("_")[1]
+                    subreg_dict[row[0]][row[1]]["orig_offset"] = row[4].split("_")[1]
                     subreg_dict[row[0]][row[1]]["subr_version"] = "original"
 
             prev_file = row[0]
 
     return subreg_dict
+
 
 def filter_file_groups(subr_dict, groups):
     filtered_groups = []
@@ -108,10 +111,16 @@ def rank_regions(lena_data):
     region_count = 0
     while end <= len(lena_data):
         ctc_cvc_avg_sum = 0
+        ctc_sum = 0
+        cvc_sum = 0
+        awc_sum = 0
         for entry in window:
             ctc_cvc_avg = (float(entry[21]) + float(entry[24])) / 2.0
             ctc_cvc_avg_sum += ctc_cvc_avg
-        region_values.append((region_count, ctc_cvc_avg_sum))
+            ctc_sum += float(entry[21])
+            cvc_sum += float(entry[24])
+            awc_sum += float(entry[18])
+        region_values.append((region_count, ctc_cvc_avg_sum/12, ctc_sum/12, cvc_sum/12, awc_sum/12))
 
         start += 1
         end += 1
@@ -122,6 +131,7 @@ def rank_regions(lena_data):
                             key=lambda region: region[1],
                             reverse=True)
     return ranked_regions
+
 
 def filter_overlaps(ranked_regions, top_n):
     filtered_regions = []
@@ -141,7 +151,6 @@ def filter_overlaps(ranked_regions, top_n):
 
         if len(filtered_regions) == top_n:
             return filtered_regions
-
 
 
 def regions_overlap(region, filtered_region):
@@ -212,7 +221,6 @@ def output_new_dictionary(new_regions, original_regions):
                                  onset, offset, rank, region["subr_version"]])
 
 
-
 def ranked_regions_to_dict(ranked_regions):
     filename = os.path.basename(ranked_regions[0])
     subreg_dict = {filename: {}}
@@ -223,11 +231,10 @@ def ranked_regions_to_dict(ranked_regions):
         region_num = sorted_regions.index(region)+1
         subreg_dict[filename][region_num] = {"reg_num": region_num,
                                              "total_reg_num": len(sorted_regions),
-                                             "onset": five_min_ms*region[0],
-                                             "offset": five_min_ms*(region[0]+12),
+                                             "orig_onset": five_min_ms*region[0],
+                                             "orig_offset": five_min_ms*(region[0]+12),
                                              "rank": index+1,
                                              "subr_version": "new"}
-
     return subreg_dict
 
 
@@ -250,6 +257,10 @@ if __name__ == "__main__":
         ranked_regions = rank_regions(lena)
         filtered_ranked_regions = filter_overlaps(ranked_regions, int(top_n))
 
+        original_filtered_ranked = original_algo.Overlaps(group.lena_file, 5)
+        original_filtered_ranked.find_dense_regions()
+        print original_filtered_ranked.ranked_ctc_cvc
+
         new_file = (group.cha_file, filtered_ranked_regions)
         new_regions.append(new_file)
 
@@ -258,9 +269,3 @@ if __name__ == "__main__":
         new_subregion_dicts.append(ranked_regions_to_dict(file))
 
     output_new_dictionary(new_subregion_dicts, subregion_dict)
-
-
-
-
-
-
