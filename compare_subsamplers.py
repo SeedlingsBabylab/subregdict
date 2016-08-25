@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     regions = []
 
-    subregion_dict = read_subr_dict(subreg_dict_file)
+    # subregion_dict = read_subr_dict(subreg_dict_file)
 
     for group in file_groups:
         lena = parse_lena(group.lena_file)
@@ -51,31 +51,16 @@ if __name__ == "__main__":
                 line[1] = x + 1
 
                 line[2] = samples["old"][x][0] # orig_index
-                line[3] = format(samples["old"][x][1], '.3f') # orig_awc
+                line[3] = format(samples["old"][x][4], '.3f') # orig_awc
                 line[4] = format(samples["old"][x][2], '.3f') # orig_ctc
                 line[5] = format(samples["old"][x][3], '.3f') # orig_cvc
-                line[6] = format(samples["old"][x][4], '.3f') # orig_ctc_cvc
+                line[6] = format(samples["old"][x][1], '.3f') # orig_ctc_cvc
 
                 line[7] = samples["new"][x][0]                 # new_index
-                line[8] = format(samples["new"][x][1], '.3f')  # new_awc
+                line[8] = format(samples["new"][x][4], '.3f')  # new_awc
                 line[9] = format(samples["new"][x][2], '.3f')  # new_ctc
                 line[10] = format(samples["new"][x][3], '.3f') # new_cvc
-                line[11] = format(samples["new"][x][4], '.3f') # new_ctc_cvc
-
-
-            # for index, region in enumerate(samples["old"]):
-            #     line[1] = index
-            #     line[2] = region[0]
-            #     line[3] = region[1]
-            #     line[4] = region[2]
-            #     line[5] = region[3]
-            #     line[6] = region[4]
-            # for index, region in enumerate(samples["new"]):
-            #     line[7] = region[0]
-            #     line[8] = region[1]
-            #     line[9] = region[2]
-            #     line[10] = region[3]
-            #     line[11] = region[4]
+                line[11] = format(samples["new"][x][1], '.3f') # new_ctc_cvc
 
                 writer.writerow(line)
 
