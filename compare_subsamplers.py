@@ -14,9 +14,17 @@ if __name__ == "__main__":
 
     file_groups = find_all_file_groups(start_dir)
 
-    results = {}
+    # Zhenya: not sure what file structure was supposed to be used but copying all silence, lena5min, and cha files
+    # into one folder resulted in a bunch of file groups with `*_silences.txt` as `group.cha_file`. Let's remove them.
+    file_groups = [fg for fg in file_groups if not fg.cha_file.endswith('_silences.txt')]
+    assert all(fg.cha_file.endswith('_sparse_code.cha') for fg in file_groups)
+    # 01_08 does not have lena5min.csv in the usual place. There is one in a subfolder but it is unclear whether it is
+    # the right one. Until I figure it out, let's just skip it.
+    assert len(file_groups) == 527 - 1
 
+    results = {}
     regions = []
+    bad_groups = []
 
     # subregion_dict = read_subr_dict(subreg_dict_file)
 
@@ -25,8 +33,12 @@ if __name__ == "__main__":
         ranked_regions = rank_regions(lena)
         filtered_ranked_regions = filter_overlaps(ranked_regions, int(top_n))
 
-        original_filtered_ranked = Overlaps(group.lena_file, 5)
-        original_filtered_ranked.find_dense_regions()
+        try:
+            original_filtered_ranked = Overlaps(group.lena_file, 5)
+            original_filtered_ranked.find_dense_regions()
+        except IndexError:
+            bad_groups.append(group)
+            continue
 
         new = filtered_ranked_regions
         old = original_filtered_ranked.tuple_set_from_map(original_filtered_ranked.ranked_ctc_cvc)
@@ -34,7 +46,6 @@ if __name__ == "__main__":
         couple = (new, old)
 
         results[os.path.basename(group.cha_file)] = {"new": new, "old": old}
-
 
     with open(output_file, "wb") as output:
         writer = csv.writer(output)
@@ -64,6 +75,10 @@ if __name__ == "__main__":
 
                 writer.writerow(line)
 
+    if bad_groups:
+        print('There were errors likely caused by the following lena5min.csv files:')
+        for bg in bad_groups:
+            print(bg.lena_file)
 
 
 
@@ -74,3 +89,5 @@ if __name__ == "__main__":
     # new_subregion_dicts = []
     # for file in new_regions:
     #     new_subregion_dicts.append(ranked_regions_to_dict(file))
+
+
